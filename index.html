@@ -1,0 +1,193 @@
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RONIN OPS - AI Coder</title>
+  <style>
+    :root {
+      --primary: #0f0;
+      --background: #111;
+      --panel: #222;
+      --error: #f55;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--background);
+      color: var(--primary);
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header { text-align: center; margin-bottom: 20px; }
+    h1 { margin: 0; font-size: 2.5rem; }
+    .subtitle { color: #888; margin-top: 5px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--primary);
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    textarea, button {
+      font-family: inherit;
+      font-size: 1rem;
+      background: var(--background);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      resize: vertical;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: #333; }
+    #run-btn { background: #0a0; }
+    #voice-btn { background: #0088cc; }
+    #status { margin-top: 5px; font-style: italic; color: #888; }
+    #output {
+      white-space: pre-wrap;
+      min-height: 200px;
+      padding: 15px;
+      overflow: auto;
+      max-height: 60vh;
+    }
+    .error { color: var(--error); }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧠 RONIN OPS</h1>
+    <p class="subtitle">LOCAL AI CODER INTERFACE</p>
+  </header>
+  
+  <div class="panel">
+    <textarea 
+      id="prompt" 
+      placeholder="Enter coding task or speak command..."
+      autofocus
+    ></textarea>
+    
+    <div class="controls">
+      <button id="run-btn" onclick="sendPrompt()">💥 EXECUTE</button>
+      <button id="voice-btn" onclick="toggleListening()">🎙️ VOICE MODE</button>
+    </div>
+    
+    <div id="status">Status: Ready</div>
+  </div>
+  
+  <div class="panel">
+    <h2>AI RESPONSE:</h2>
+    <pre id="output">// Your generated code will appear here</pre>
+  </div>
+
+  <script>
+    const promptInput = document.getElementById('prompt');
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const voiceBtn = document.getElementById('voice-btn');
+    let recognition = null;
+    let isListening = false;
+
+    // Speech Recognition setup
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        statusEl.innerHTML = 'Status: <span class="error">Speech API not supported</span>';
+        voiceBtn.disabled = true;
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        isListening = true;
+        voiceBtn.textContent = '🎙️ LISTENING...';
+        statusEl.textContent = 'Status: Listening...';
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        promptInput.value = transcript;
+        statusEl.textContent = `Status: Heard: "${transtext}"`;
+        sendPrompt();
+      };
+
+      recognition.onerror = (event) => {
+        statusEl.innerHTML = `Status: <span class="error">Voice error: ${event.error}</span>`;
+        stopListening();
+      };
+
+      recognition.onend = () => {
+        stopListening();
+      };
+    }
+
+    function toggleListening() {
+      if (!recognition) initSpeechRecognition();
+      if (isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+
+    function stopListening() {
+      isListening = false;
+      voiceBtn.textContent = '🎙️ VOICE MODE';
+      statusEl.textContent = 'Status: Ready';
+    }
+
+    async function sendPrompt() {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+      
+      outputEl.textContent = "🔮 Contacting DeepSeek...";
+      statusEl.textContent = "Status: Processing...";
+      
+      try {
+        const response = await fetch("/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+        
+        const data = await response.json();
+        outputEl.textContent = data.response;
+        statusEl.textContent = "Status: Complete";
+        
+      } catch (error) {
+        outputEl.textContent = `⚡ ERROR: ${error.message}`;
+        statusEl.textContent = "Status: Network error";
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') sendPrompt();
+    });
+  </script>
+</body>
+</html>
