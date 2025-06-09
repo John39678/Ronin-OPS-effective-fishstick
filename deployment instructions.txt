@@ -1,0 +1,10 @@
+
+## 🚀 Deployment Instructions
+
+1. **Create project structure:**
+```bash
+mkdir ronin-ops
+cd ronin-ops
+touch main.py requirements.txt README.md
+mkdir static
+touch static/index.html
