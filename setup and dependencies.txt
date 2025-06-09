@@ -1,0 +1,16 @@
+
+## 🛠️ Setup
+
+### Prerequisites
+1. [LM Studio](https://lmstudio.ai/) installed
+2. Python 3.10+
+3. Modern browser (Chrome recommended)
+
+### Installation
+```bash
+# Clone repository
+git clone https://github.com/your-username/ronin-ops.git
+cd ronin-ops
+
+# Install dependencies
+pip install -r requirements.txt
